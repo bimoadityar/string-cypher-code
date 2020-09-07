@@ -186,13 +186,13 @@ class CipherOptions(Frame):
         elif (self.v.get() == 4):
             return cp.VigenereExtended()
         elif (self.v.get() == 5):
-            return cp.VigenereStandard() #cp.Playfair()
+            return cp.Playfair()
         elif (self.v.get() == 6):
-            return cp.VigenereStandard() #cp.SuperEncryption()
+            return cp.SuperEncryption()
         elif (self.v.get() == 7):
-            return cp.VigenereStandard() #cp.Affine()
+            return cp.Affine()
         elif (self.v.get() == 8):
-            return cp.VigenereStandard() #cp.Hill()
+            return cp.Hill()
         elif (self.v.get() == 9):
             return cp.VigenereStandard() #cp.Enigma()
 
