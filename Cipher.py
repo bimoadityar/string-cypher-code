@@ -94,7 +94,37 @@ class VigenereFull(VigenereStandard):
         else:
             print("Error, matrix empty")
 
-# class VigenereAutoKey(VigenereStandard):
+# AutoKey Vigenere Cipher
+class VigenereAutoKey(VigenereStandard):
+    def encrypt(self, text):
+        text = "".join([c for c in text.lower() if c.isalpha()])
+        text, key = self.__normalizeTextKey(text, self.key)
+        text = list(map(lambda p: ord(p) % ord('a'), list(text)))
+        key = list(map(lambda p: ord(p) % ord('a'), list(key)))
+        cipherText = map(lambda p: chr(
+            (p[0] + p[1]) % 26 + ord('a')), zip(text, key))
+        cipherText = ''.join(list(cipherText))
+        return cipherText.upper()
+
+    def decrypt(self, text):
+        text = "".join([c for c in text.lower() if c.isalpha()])
+        text, key = self.__normalizeTextKey(text, self.key)
+        text = list(map(lambda p: ord(p) % ord('a'), list(text)))
+        key = list(map(lambda p: ord(p) % ord('a'), list(key)))
+        plainText = map(lambda p: chr(
+            (p[0] - p[1]) % 26 + ord('a')), zip(text, key))
+        plainText = ''.join(list(plainText))
+        return plainText.lower()
+
+    def __normalizeTextKey(self, text, key):
+        if (text.__len__() == key.__len__()):
+            return text, key
+        elif (text.__len__() > key.__len__()):
+            key = key + text[0:text.__len__()-key.__len__()]
+            return text, key
+        else:  # text.length < key.length
+            key = key[0:text.__len__()]
+            return text, key
 
 # class VigenereExtended(VigenereStandard):
 
