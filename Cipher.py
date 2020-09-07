@@ -19,8 +19,8 @@ class Cipher(ABC):
         return c.isalpha()
 
     def toLowerString(self, text):
-        lowerText = self.toLower(self, text)
-        return "".join([c for c in lowerText if self.isLowerAlphabet(self, c)])
+        lowerText = self.toLower(text)
+        return "".join([c for c in lowerText if self.isLowerAlpha(c)])
 
     def toNumber(self, c):
         return ord(c) - ord('a')
@@ -42,6 +42,15 @@ class Cipher(ABC):
             raise "a is not relatively prime with 26"
         return ((a % 26) ** 11) % 26
 
+    def rat26(self, a, b):
+        for d in [2, 13]:
+            while b % d == 0:
+                if a % d != 0:
+                    raise "divisor is not relatively prime with 26"
+                a /= d
+                b /= d
+        return (a * self.inv26(b)) % 26
+
 
 # Standard Vigenere Cipher
 class VigenereStandard(Cipher):
@@ -58,7 +67,7 @@ class VigenereStandard(Cipher):
         keyIdx = 0
         resultArray = []
         for c in lowerText:
-            resultArray.append(self.addLowerAlpha(c, self.key[keyIdx])
+            resultArray.append(self.addLowerAlpha(c, self.key[keyIdx]))
             keyIdx = (keyIdx + 1) % len(self.key)
         return ''.join(resultArray)
 
@@ -67,7 +76,7 @@ class VigenereStandard(Cipher):
         keyIdx = 0
         resultArray = []
         for c in lowerText:
-            resultArray.append(self.subLowerAlpha(c, self.key[keyIdx])
+            resultArray.append(self.subLowerAlpha(c, self.key[keyIdx]))
             keyIdx = (keyIdx + 1) % len(self.key)
         return ''.join(resultArray)
 
@@ -139,7 +148,7 @@ class VigenereAutoKey(Cipher):
         resultArray = []
         for c in lowerText:
             keyChar = text[keyIdx - len(self.key)] if keyIdx >= len(self.key) else self.key[keyIdx]
-            resultArray.append(self.addLowerAlpha(c, keyChar)
+            resultArray.append(self.addLowerAlpha(c, keyChar))
             keyIdx += 1
         return ''.join(resultArray)
 
@@ -149,7 +158,7 @@ class VigenereAutoKey(Cipher):
         resultArray = []
         for c in lowerText:
             keyChar = resultArray[keyIdx - len(self.key)] if keyIdx >= len(self.key) else self.key[keyIdx]
-            resultArray.append(self.subLowerAlpha(c, keyChar)
+            resultArray.append(self.subLowerAlpha(c, keyChar))
             keyIdx += 1
         return ''.join(resultArray)
 
@@ -190,7 +199,7 @@ class Playfair(Cipher):
     def changeKey(self, newKey):
         alreadyOccur = set()
         self.pos = {}
-        self.matrix = [[None] * 5] * 5
+        self.matrix = [[None for i in range(5)] for j in range(5)]
         x = 0
         y = 0
         newKey += "abcdefghijklmnopqrstuvwxyz"
@@ -283,7 +292,7 @@ class SuperEncryption(VigenereStandard):
         return super().decrypt(''.join(resultArray))
 
 
-class Affine(Cypher):
+class Affine(Cipher):
     def __init__(self, key="7,10"):
         self.changeKey(key)
 
@@ -297,7 +306,7 @@ class Affine(Cypher):
         resultArray = []
         for c in lowerText:
             num = self.toNumber(c)
-            resultArray.append(self.toLowerAlpha(self.key[0] * num + self.key[1])
+            resultArray.append(self.toLowerAlpha(self.key[0] * num + self.key[1]))
         return ''.join(resultArray)
 
     def decrypt(self, text):
@@ -305,10 +314,10 @@ class Affine(Cypher):
         resultArray = []
         for c in lowerText:
             num = self.toNumber(c)
-            resultArray.append(self.toLowerAlpha(self.key[2] * num + self.key[1])
+            resultArray.append(self.toLowerAlpha(self.key[2] * (num - self.key[1])))
         return ''.join(resultArray)
 
-class Hill(Cypher):
+class Hill(Cipher):
     def __init__(self, key="1,2,3,4,5,6,7,8,9"):
         self.changeKey(key)
 
@@ -323,10 +332,10 @@ class Hill(Cypher):
         G = b * f - e * c
         H = c * d - a * f
         I = a * e - b * d
-        invDet = self.inv26(a * A + b * B + c * C)
+        det = a * A + b * B + c * C
         self.matrix = np.array([[a, b, c], [d, e, f], [g, h, i]])
         invMatrix = [[A, B, C], [D, E, F], [G, H, I]]
-        self.invMatrix = np.array([[(invDet * p) % 26 for p in row] for row in invMatrix])
+        self.invMatrix = np.array([[self.rat26(p, det) for p in row] for row in invMatrix])
 
     def encrypt(self, text):
         lowerText = self.toLowerString(text)
@@ -341,7 +350,7 @@ class Hill(Cypher):
                 resultArray.append(self.toLowerAlpha(d[0]))
         return ''.join(resultArray)
 
-    def encrypt(self, text):
+    def decrypt(self, text):
         lowerText = self.toLowerString(text)
         resultArray = []
         for i in range(0, len(lowerText), 3):
