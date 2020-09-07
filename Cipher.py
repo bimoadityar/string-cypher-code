@@ -126,8 +126,40 @@ class VigenereAutoKey(VigenereStandard):
             key = key[0:text.__len__()]
             return text, key
 
-# class VigenereExtended(VigenereStandard):
+# Extended Vigenere Cipher
+class VigenereExtended(VigenereStandard):
+    def encrypt(self, text):
+        if (type(text) == str):
+            text = text.encode("ascii")
+        text, key = self.__normalizeTextKey(text, self.key)
+        text = list(text)
+        key = list(key.encode("ascii"))
+        cipherText = map(lambda p: (p[0] + p[1]) % 256, zip(text, key))
+        cipherText = bytes(list(cipherText))
+        return cipherText
 
+    def decrypt(self, text):
+        if (type(text) == str):
+            text = text.encode("ascii")
+        text, key = self.__normalizeTextKey(text, self.key)
+        text = list(text)
+        key = list(key.encode("ascii"))
+        plainText = map(lambda p:
+                        (p[0] - p[1]) % 256, zip(text, key))
+        plainText = bytes(list(plainText))
+        return plainText
+
+    def __normalizeTextKey(self, text, key):
+        if (text.__len__() == key.__len__()):
+            return text, key
+        elif (text.__len__() > key.__len__()):
+            key = (key * (text.__len__()//key.__len__())) + \
+                key[0:text.__len__() % key.__len__()]
+            return text, key
+        else:
+            key = key[0:text.__len__()]
+            return text, key
+	
 # class Playfair:
 
 # class SuperEncryption:
