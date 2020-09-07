@@ -1,171 +1,356 @@
 from string import ascii_lowercase
 from random import shuffle
+from abc import ABC, abstractmethod
 import numpy as np
 
-# Standard Vigenere Cipher
-class VigenereStandard:
-    def __init__(self, key="vigenere"):
-        self.key = key.lower()
+class Cipher(ABC):
+    @abstractmethod
+    def encrypt(self, text):
+        pass
 
-    def changeKey(self, newKey):
-        self.key = newKey.lower()
+    @abstractmethod
+    def decrypt(self, text):
+        pass
+
+    def toLower(self, text):
+        return text.lower()
+
+    def isLowerAlpha(self, c):
+        return c.isalpha()
+
+    def toLowerString(self, text):
+        lowerText = self.toLower(self, text)
+        return "".join([c for c in lowerText if self.isLowerAlphabet(self, c)])
+
+    def toNumber(self, c):
+        return ord(c) - ord('a')
+
+    def toLowerAlpha(self, num):
+        return chr(num % 26 + ord('a'))
+
+    def shiftLowerAlpha(self, c, num):
+        return self.toLowerAlpha(self.toNumber(c) + num)
+
+    def addLowerAlpha(self, c, d):
+        return self.shiftLowerAlpha(c, self.toNumber(d))
+
+    def subLowerAlpha(self, c, d):
+        return self.shiftLowerAlpha(c, -self.toNumber(d))
+
+    def inv26(self, a):
+        if a % 2 == 0 or a % 13 == 0:
+            raise "a is not relatively prime with 26"
+        return ((a % 26) ** 11) % 26
+
+
+# Standard Vigenere Cipher
+class VigenereStandard(Cipher):
+    def __init__(self, key="vigenere"):
+        self.changeKey(key)
+
+    def changeKey(self, key):
+        self.key = self.toLowerString(key)
+        if not self.key:
+            raise "Key does not contain lowercase alphabet"
 
     def encrypt(self, text):
-        text = "".join([c for c in text.lower() if c.isalpha()])
-        text, key = self.__normalizeTextKey(text, self.key)
-        text = list(map(lambda p: ord(p) % ord('a'), list(text)))
-        key = list(map(lambda p: ord(p) % ord('a'), list(key)))
-        cipherText = map(lambda p: chr((p[0] + p[1]) % 26 + ord('a')), zip(text, key))
-        cipherText = ''.join(list(cipherText))
-        return cipherText.upper()
+        lowerText = self.toLowerString(text)
+        keyIdx = 0
+        resultArray = []
+        for c in lowerText:
+            resultArray.append(self.addLowerAlpha(c, self.key[keyIdx])
+            keyIdx = (keyIdx + 1) % len(self.key)
+        return ''.join(resultArray)
 
     def decrypt(self, text):
-        text = "".join([c for c in text.lower() if c.isalpha()])
-        text, key = self.__normalizeTextKey(text, self.key)
-        text = list(map(lambda p: ord(p) % ord('a'), list(text)))
-        key = list(map(lambda p: ord(p) % ord('a'), list(key)))
-        plainText = map(lambda p: chr((p[0] - p[1]) % 26 + ord('a')), zip(text, key))
-        plainText = ''.join(list(plainText))
-        return plainText.lower()
+        lowerText = self.toLowerString(text)
+        keyIdx = 0
+        resultArray = []
+        for c in lowerText:
+            resultArray.append(self.subLowerAlpha(c, self.key[keyIdx])
+            keyIdx = (keyIdx + 1) % len(self.key)
+        return ''.join(resultArray)
 
-    def __normalizeTextKey(self, text, key):
-        if (text.__len__() == key.__len__()):
-            return text, key
-        elif (text.__len__() > key.__len__()):
-            key = (key * (text.__len__()//key.__len__())) + \
-                key[0:text.__len__() % key.__len__()]
-            return text, key
-        else:
-            key = key[0:text.__len__()]
-            return text, key
 
 # Full Vigenere Cipher
-class VigenereFull(VigenereStandard):
-    def __init__(self, key="vigenere", matrixName=None):
-        self.key = key
-        if (matrixName == None):
+class VigenereFull(Cipher):
+    def __init__(self, key="vigenere-full", matrixName=None):
+        self.changeKey(key, matrixName)
+
+    def changeKey(self, key, matrixName):
+        self.key = self.toLowerString(key)
+        if not self.key:
+            raise "Key does not contain lowercase alphabet"
+        if matrixName is None:
             self.matrix = self.createMatrix()
         else:
             self.matrix = np.load("./matrix/"+matrixName+".npy")
-
-    def changeKey(self, newKey):
-        self.key = newKey.lower()
+        self.invMatrix = self.inverseMatrix(self.matrix)
 
     def encrypt(self, text):
-        text = "".join([c for c in text.lower() if c.isalpha()])
-        text, key = self.__normalizeTextKey(text, self.key)
-        text = list(map(lambda p: ord(p) % ord('a'), list(text)))
-        key = list(map(lambda p: ord(p) % ord('a'), list(key)))
-        cipherText = map(lambda p: chr(
-            (self.matrix[p[1]][p[0]]) % 26 + ord('a')), zip(text, key))
-        cipherText = ''.join(list(cipherText))
-        return cipherText.upper()
+        lowerText = self.toLowerString(text)
+        keyIdx = 0
+        resultArray = []
+        for c in lowerText:
+            keyNum = self.toNumber(self.key[keyIdx])
+            resultArray.append(self.matrix[keyNum][self.toNumber(c)])
+            keyIdx = (keyIdx + 1) % len(self.key)
+        return ''.join(resultArray)
 
     def decrypt(self, text):
-        text = "".join([c for c in text.lower() if c.isalpha()])
-        text, key = self.__normalizeTextKey(text, self.key)
-        text = list(map(lambda p: ord(p) % ord('a'), list(text)))
-        key = list(map(lambda p: ord(p) % ord('a'), list(key)))
-        plainText = map(lambda p: chr(
-            (np.where(self.matrix[p[1]] == p[0])[0].item()) % 26 + ord('a')), zip(text, key))
-        plainText = ''.join(list(plainText))
-        return plainText.lower()
-
-    def __normalizeTextKey(self, text, key):
-        if (text.__len__() == key.__len__()):
-            return text, key
-        elif (text.__len__() > key.__len__()):
-            key = (key * (text.__len__()//key.__len__())) + \
-                key[0:text.__len__() % key.__len__()]
-            return text, key
-        else:  # text.length < key.length
-            key = key[0:text.__len__()]
-            return text, key
+        lowerText = self.toLowerString(text)
+        keyIdx = 0
+        resultArray = []
+        for c in lowerText:
+            keyNum = self.toNumber(self.key[keyIdx])
+            resultArray.append(self.invMatrix[keyNum][self.toNumber(c)])
+            keyIdx = (keyIdx + 1) % len(self.key)
+        return ''.join(resultArray)
 
     def createMatrix(self):
-        mat = np.arange(26)
-        shuffle(mat)
-        mat = np.array([np.roll(mat, i) for i in range(26)])
-        return mat
+        np.random.seed(135182)
+        return np.array([np.random.permutation(26) for i in range(26)])
+
+    def inverseMatrix(self, mat):
+        inv = np.zeros((26, 26), dtype=int) - 1
+        for i in range(26):
+            for j in range(26):
+                if inv[i][mat[i][j]] != -1:
+                    raise "Matrix contains duplicate entry in the same row"
+                inv[i][mat[i][j]] = j
+        return inv
 
     def saveMatrix(self, matrixName):
-        if (self.matrix.any()):
-            np.save("./matrix/"+matrixName, self.matrix)
-        else:
-            print("Error, matrix empty")
+        np.save("./matrix/"+matrixName, self.matrix)
 
 # AutoKey Vigenere Cipher
-class VigenereAutoKey(VigenereStandard):
+class VigenereAutoKey(Cipher):
+    def __init__(self, key="vigenere-auto-key"):
+        self.changeKey(key)
+
+    def changeKey(self, key):
+        self.key = self.toLowerString(key)
+        if not self.key:
+            raise "Key does not contain lowercase alphabet"
+
     def encrypt(self, text):
-        text = "".join([c for c in text.lower() if c.isalpha()])
-        text, key = self.__normalizeTextKey(text, self.key)
-        text = list(map(lambda p: ord(p) % ord('a'), list(text)))
-        key = list(map(lambda p: ord(p) % ord('a'), list(key)))
-        cipherText = map(lambda p: chr(
-            (p[0] + p[1]) % 26 + ord('a')), zip(text, key))
-        cipherText = ''.join(list(cipherText))
-        return cipherText.upper()
+        lowerText = self.toLowerString(text)
+        keyIdx = 0
+        resultArray = []
+        for c in lowerText:
+            keyChar = text[keyIdx - len(self.key)] if keyIdx >= len(self.key) else self.key[keyIdx]
+            resultArray.append(self.addLowerAlpha(c, keyChar)
+            keyIdx += 1
+        return ''.join(resultArray)
 
     def decrypt(self, text):
-        text = "".join([c for c in text.lower() if c.isalpha()])
-        text, key = self.__normalizeTextKey(text, self.key)
-        text = list(map(lambda p: ord(p) % ord('a'), list(text)))
-        key = list(map(lambda p: ord(p) % ord('a'), list(key)))
-        plainText = map(lambda p: chr(
-            (p[0] - p[1]) % 26 + ord('a')), zip(text, key))
-        plainText = ''.join(list(plainText))
-        return plainText.lower()
+        lowerText = self.toLowerString(text)
+        keyIdx = 0
+        resultArray = []
+        for c in lowerText:
+            keyChar = resultArray[keyIdx - len(self.key)] if keyIdx >= len(self.key) else self.key[keyIdx]
+            resultArray.append(self.subLowerAlpha(c, keyChar)
+            keyIdx += 1
+        return ''.join(resultArray)
 
-    def __normalizeTextKey(self, text, key):
-        if (text.__len__() == key.__len__()):
-            return text, key
-        elif (text.__len__() > key.__len__()):
-            key = key + text[0:text.__len__()-key.__len__()]
-            return text, key
-        else:  # text.length < key.length
-            key = key[0:text.__len__()]
-            return text, key
 
 # Extended Vigenere Cipher
-class VigenereExtended(VigenereStandard):
+class VigenereExtended(Cipher):
+    def __init__(self, key="vigenere-extended"):
+        self.changeKey(key)
+
+    def changeKey(self, key):
+        self.key = key
+
     def encrypt(self, text):
-        if (type(text) == str):
-            text = text.encode("ascii")
-        text, key = self.__normalizeTextKey(text, self.key)
-        text = list(text)
-        key = list(key.encode("ascii"))
-        cipherText = map(lambda p: (p[0] + p[1]) % 256, zip(text, key))
-        cipherText = bytes(list(cipherText))
-        return cipherText
+        codes = text.encode("ascii") if type(text) == str else text
+        keyCodes = self.key.encode("ascii")
+        keyIdx = 0
+        resultArray = []
+        for c in codes:
+            resultArray.append((c + keyCodes[keyIdx]) % 256)
+            keyIdx = (keyIdx + 1) % len(keyCodes)
+        return bytes(resultArray)
 
     def decrypt(self, text):
-        if (type(text) == str):
-            text = text.encode("ascii")
-        text, key = self.__normalizeTextKey(text, self.key)
-        text = list(text)
-        key = list(key.encode("ascii"))
-        plainText = map(lambda p:
-                        (p[0] - p[1]) % 256, zip(text, key))
-        plainText = bytes(list(plainText))
-        return plainText
+        codes = text.encode("ascii") if type(text) == str else text
+        keyCodes = self.key.encode("ascii")
+        keyIdx = 0
+        resultArray = []
+        for c in codes:
+            resultArray.append((c - keyCodes[keyIdx]) % 256)
+            keyIdx = (keyIdx + 1) % len(keyCodes)
+        return bytes(resultArray)
 
-    def __normalizeTextKey(self, text, key):
-        if (text.__len__() == key.__len__()):
-            return text, key
-        elif (text.__len__() > key.__len__()):
-            key = (key * (text.__len__()//key.__len__())) + \
-                key[0:text.__len__() % key.__len__()]
-            return text, key
-        else:
-            key = key[0:text.__len__()]
-            return text, key
-	
-# class Playfair:
 
-# class SuperEncryption:
+class Playfair(Cipher):
+    def __init__(self, key="playfair"):
+        self.changeKey(key)
+
+    def changeKey(self, newKey):
+        alreadyOccur = set()
+        self.pos = {}
+        self.matrix = [[None] * 5] * 5
+        x = 0
+        y = 0
+        newKey += "abcdefghijklmnopqrstuvwxyz"
+        for c in newKey:
+            if c in alreadyOccur or c == 'j':
+                continue
+            alreadyOccur.add(c)
+            self.pos[c] = (x, y)
+            self.matrix[x][y] = c
+            y += 1
+            if y == 5:
+                x += 1
+                y = 0
+
+    def encrypt(self, text):
+        lowerText = self.toLowerString(text)
+        resultArray = []
+        idx = 0
+        while idx < len(lowerText):
+            a = lowerText[idx] if lowerText[idx] != 'j' else 'i'
+            idx += 1
+            if idx == len(lowerText):
+                b = 'x'
+            elif a == lowerText[idx] or (a == 'i' and lowerText[idx] == 'j'):
+                b = 'x'
+            else:
+                b = lowerText[idx] if lowerText[idx] != 'j' else 'i'
+                idx += 1
+            xa, ya = self.pos[a]
+            xb, yb = self.pos[b]
+            if xa == xb:
+                c = self.matrix[xa][(ya + 1) % 5]
+                d = self.matrix[xb][(yb + 1) % 5]
+            elif ya == yb:
+                c = self.matrix[(xa + 1) % 5][ya]
+                d = self.matrix[(xb + 1) % 5][yb]
+            else:
+                c = self.matrix[xa][yb]
+                d = self.matrix[xb][ya]
+            resultArray.append(c)
+            resultArray.append(d)
+        return ''.join(resultArray)
+
+    def decrypt(self, text):
+        lowerText = self.toLowerString(text)
+        resultArray = []
+        idx = 0
+        while idx < len(lowerText):
+            a = lowerText[idx]
+            b = lowerText[idx + 1]
+            idx += 2
+            xa, ya = self.pos[a]
+            xb, yb = self.pos[b]
+            if xa == xb:
+                c = self.matrix[xa][(ya - 1) % 5]
+                d = self.matrix[xb][(yb - 1) % 5]
+            elif ya == yb:
+                c = self.matrix[(xa - 1) % 5][ya]
+                d = self.matrix[(xb - 1) % 5][yb]
+            else:
+                c = self.matrix[xa][yb]
+                d = self.matrix[xb][ya]
+            resultArray.append(c)
+            resultArray.append(d)
+        return ''.join(resultArray)
+
+class SuperEncryption(VigenereStandard):
+    def __init__(self, key="super-encryption"):
+        self.changeKey(key)
+
+    def encrypt(self, text):
+        substituted = super().encrypt(text)
+        resultArray = []
+        for i in range(4):
+            for j in range(i, len(substituted), 4):
+                resultArray.append(substituted[j])
+        return ''.join(resultArray)
 	
-# class Affine:
-	
-# class Hill:
+    def decrypt(self, text):
+        lowerText = self.toLowerString(text)
+        length = len(lowerText) // 4
+        offset = [0, length, 2 * length, 3 * length, len(lowerText)]
+        for i in range(4):
+            offset[i] += min(len(lowerText) % 4, i)
+        resultArray = []
+        for i in range(length + 1):
+            for j in range(4):
+                if offset[j] + i < offset[j + 1]:
+                    resultArray.append(lowerText[offset[j] + i])
+        return super().decrypt(''.join(resultArray))
+
+
+class Affine(Cypher):
+    def __init__(self, key="7,10"):
+        self.changeKey(key)
+
+    def changeKey(self, key):
+        [a, b] = [int(x) for x in key.split(',')]
+        self.key = (a, b, self.inv26(a))
+
+
+    def encrypt(self, text):
+        lowerText = self.toLowerString(text)
+        resultArray = []
+        for c in lowerText:
+            num = self.toNumber(c)
+            resultArray.append(self.toLowerAlpha(self.key[0] * num + self.key[1])
+        return ''.join(resultArray)
+
+    def decrypt(self, text):
+        lowerText = self.toLowerString(text)
+        resultArray = []
+        for c in lowerText:
+            num = self.toNumber(c)
+            resultArray.append(self.toLowerAlpha(self.key[2] * num + self.key[1])
+        return ''.join(resultArray)
+
+class Hill(Cypher):
+    def __init__(self, key="1,2,3,4,5,6,7,8,9"):
+        self.changeKey(key)
+
+    def changeKey(self, key):
+        [a, b, c, d, e, f, g, h, i] = [int(x) for x in key.split(',')]
+        A = e * i - h * f
+        B = f * g - d * i
+        C = d * h - e * g
+        D = h * c - b * i
+        E = a * i - c * g
+        F = b * g - a * h
+        G = b * f - e * c
+        H = c * d - a * f
+        I = a * e - b * d
+        invDet = self.inv26(a * A + b * B + c * C)
+        self.matrix = np.array([[a, b, c], [d, e, f], [g, h, i]])
+        invMatrix = [[A, B, C], [D, E, F], [G, H, I]]
+        self.invMatrix = np.array([[(invDet * p) % 26 for p in row] for row in invMatrix])
+
+    def encrypt(self, text):
+        lowerText = self.toLowerString(text)
+        resultArray = []
+        for i in range(0, len(lowerText), 3):
+            s = lowerText[i:i+3]
+            while len(s) < 3:
+                s += 'x'
+            v = np.array([[self.toNumber(c)] for c in s])
+            w = np.matmul(self.matrix, v)
+            for d in w:
+                resultArray.append(self.toLowerAlpha(d[0]))
+        return ''.join(resultArray)
+
+    def encrypt(self, text):
+        lowerText = self.toLowerString(text)
+        resultArray = []
+        for i in range(0, len(lowerText), 3):
+            s = lowerText[i:i+3]
+            v = np.array([[self.toNumber(c)] for c in s])
+            w = np.matmul(self.invMatrix, v)
+            for d in w:
+                resultArray.append(self.toLowerAlpha(d[0]))
+        return ''.join(resultArray)
+
 	
 # class Enigma:
