@@ -182,7 +182,7 @@ class CipherOptions(Frame):
         elif (self.v.get() == 2):
             return cp.VigenereFull(matrixName="test")
         elif (self.v.get() == 3):
-            return cp.VigenereStandard() #cp.VigenereAutoKey()
+            return cp.VigenereAutoKey()
         elif (self.v.get() == 4):
             return cp.VigenereStandard() #cp.VigenereExtended()
         elif (self.v.get() == 5):
