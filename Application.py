@@ -184,7 +184,7 @@ class CipherOptions(Frame):
         elif (self.v.get() == 3):
             return cp.VigenereAutoKey()
         elif (self.v.get() == 4):
-            return cp.VigenereStandard() #cp.VigenereExtended()
+            return cp.VigenereExtended()
         elif (self.v.get() == 5):
             return cp.VigenereStandard() #cp.Playfair()
         elif (self.v.get() == 6):
