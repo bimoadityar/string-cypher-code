@@ -108,11 +108,11 @@ class Application(Frame):
         if (type(cipher) is cp.VigenereExtended):
             plainText = open(self.filepath, "rb").read()
             outputPath = "/".join(self.filepath.split('/')
-                                  [:-1])+"/enc_"+self.filepath.split('/')[-1]
+                                  [:-1])+"/encrypted_"+self.filepath.split('/')[-1]
             data = cipher.encrypt(plainText)
             safeData(outputPath, data)
             self.eOutput.delete(1.0, END)
-            self.eOutput.insert(END, "File succesfully encrypted!")
+            self.eOutput.insert(END, "File berhasil dienkripsi!")
             self.filepath = None
         else:
             cipherText = cipher.encrypt(plainText)
@@ -132,11 +132,11 @@ class Application(Frame):
         if (type(cipher) is cp.VigenereExtended):
             originalText = open(self.filepath, "rb").read()
             outputPath = "/".join(self.filepath.split('/')
-                                  [:-1])+"/dec_"+self.filepath.split('/')[-1]
+                                  [:-1])+"/decrypted_"+self.filepath.split('/')[-1]
             data = cipher.decrypt(originalText)
             safeData(outputPath, data)
             self.eOutput.delete(1.0, END)
-            self.eOutput.insert(END, "File succesfully decrypted!")
+            self.eOutput.insert(END, "File berhasil didekripsi!!")
             self.filepath = None
         else:
             processed = cipher.decrypt(originalText)
@@ -160,7 +160,7 @@ class CipherOptions(Frame):
         ("Super Enkripsi", 6),
         ("Affine Cipher", 7),
         ("Hill Cipher", 8),
-        # ("Enigma Cipher", 9),
+        ("Enigma Cipher", 9),
     ]
 
     def __init__(self, master=None):
@@ -195,10 +195,8 @@ class CipherOptions(Frame):
             return cp.Affine()
         elif (self.v.get() == 8):
             return cp.Hill()
-        '''
         elif (self.v.get() == 9):
             return cp.Enigma()
-        '''
 
 class OutputChoices(Frame):
     formats = [
