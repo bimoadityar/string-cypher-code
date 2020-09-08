@@ -84,17 +84,17 @@ class VigenereStandard(Cipher):
 # Full Vigenere Cipher
 class VigenereFull(Cipher):
     def __init__(self, key="vigenere-full", matrixName=None):
-        self.changeKey(key, matrixName)
-
-    def changeKey(self, key, matrixName):
-        self.key = self.toLowerString(key)
-        if not self.key:
-            raise "Key does not contain lowercase alphabet"
+        self.changeKey(key)
         if matrixName is None:
             self.matrix = self.createMatrix()
         else:
             self.matrix = np.load("./matrix/"+matrixName+".npy")
         self.invMatrix = self.inverseMatrix(self.matrix)
+
+    def changeKey(self, key):
+        self.key = self.toLowerString(key)
+        if not self.key:
+            raise "Key does not contain lowercase alphabet"
 
     def encrypt(self, text):
         lowerText = self.toLowerString(text)
@@ -102,7 +102,7 @@ class VigenereFull(Cipher):
         resultArray = []
         for c in lowerText:
             keyNum = self.toNumber(self.key[keyIdx])
-            resultArray.append(self.matrix[keyNum][self.toNumber(c)])
+            resultArray.append(self.toLowerAlpha(self.matrix[keyNum][self.toNumber(c)]))
             keyIdx = (keyIdx + 1) % len(self.key)
         return ''.join(resultArray)
 
@@ -112,7 +112,7 @@ class VigenereFull(Cipher):
         resultArray = []
         for c in lowerText:
             keyNum = self.toNumber(self.key[keyIdx])
-            resultArray.append(self.invMatrix[keyNum][self.toNumber(c)])
+            resultArray.append(self.toLowerAlpha(self.invMatrix[keyNum][self.toNumber(c)]))
             keyIdx = (keyIdx + 1) % len(self.key)
         return ''.join(resultArray)
 
@@ -318,7 +318,7 @@ class Affine(Cipher):
         return ''.join(resultArray)
 
 class Hill(Cipher):
-    def __init__(self, key="1,2,3,4,5,6,7,8,9"):
+    def __init__(self, key="17,17,5,21,18,21,2,2,19"):
         self.changeKey(key)
 
     def changeKey(self, key):
@@ -334,7 +334,7 @@ class Hill(Cipher):
         I = a * e - b * d
         det = a * A + b * B + c * C
         self.matrix = np.array([[a, b, c], [d, e, f], [g, h, i]])
-        invMatrix = [[A, B, C], [D, E, F], [G, H, I]]
+        invMatrix = [[A, D, G], [B, E, H], [C, F, I]]
         self.invMatrix = np.array([[self.rat26(p, det) for p in row] for row in invMatrix])
 
     def encrypt(self, text):
@@ -362,4 +362,68 @@ class Hill(Cipher):
         return ''.join(resultArray)
 
 	
-# class Enigma:
+class Enigma(Cipher):
+    def __init__(self, key="enigma", matrixName=None):
+        self.changeKey(key)
+        if matrixName is None:
+            self.matrix = self.createMatrix()
+        else:
+            self.matrix = np.load("./matrix/"+matrixName+".npy")
+        self.invMatrix = self.inverseMatrix(self.matrix)
+
+    def changeKey(self, key):
+        self.key = self.toLowerString(key)
+        if not self.key or len(self.key) < 3:
+            raise "Key does not contain 3 lowercase alphabets"
+
+    def encrypt(self, text):
+        lowerText = self.toLowerString(text)
+        keyIdx = 0
+        resultArray = []
+        idx = [self.toNumber(c) for c in self.key][0:3]
+        for c in lowerText:
+            cNum = self.toNumber(c)
+            for i in range(3):
+                cNum = self.matrix[i][(cNum + idx[i]) % 26]
+            resultArray.append(self.toLowerAlpha(cNum))
+            idx[0] += 1
+            for i in range(3):
+                if idx[i] == 26:
+                    idx[i] = 0
+                    if i + 1 < 3:
+                        idx[i + 1] += 1
+        return ''.join(resultArray)
+
+    def decrypt(self, text):
+        lowerText = self.toLowerString(text)
+        keyIdx = 0
+        resultArray = []
+        idx = [self.toNumber(c) for c in self.key][0:3]
+        for c in lowerText:
+            cNum = self.toNumber(c)
+            for i in reversed(range(3)):
+                cNum = (self.invMatrix[i][cNum] - idx[i]) % 26
+            resultArray.append(self.toLowerAlpha(cNum))
+            idx[0] += 1
+            for i in range(3):
+                if idx[i] == 26:
+                    idx[i] = 0
+                    if i + 1 < 3:
+                        idx[i + 1] += 1
+        return ''.join(resultArray)
+
+    def createMatrix(self):
+        np.random.seed(182135)
+        return np.array([np.random.permutation(26) for i in range(3)])
+
+    def inverseMatrix(self, mat):
+        inv = np.zeros((3, 26), dtype=int) - 1
+        for i in range(3):
+            for j in range(26):
+                if inv[i][mat[i][j]] != -1:
+                    raise "Matrix contains duplicate entry in the same row"
+                inv[i][mat[i][j]] = j
+        return inv
+
+    def saveMatrix(self, matrixName):
+        np.save("./matrix/"+matrixName, self.matrix)
