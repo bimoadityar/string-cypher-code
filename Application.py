@@ -26,25 +26,27 @@ class Application(Frame):
 
 		# Opsi
         actionFrame = Frame()
+        Label(master, text="Cipher Select", font=("Helvetica", 16)).grid(row=4)
         self.cipherOption = CipherOptions(master=actionFrame)
         self.cipherOption.grid(row=4, pady=(0,25))
+        Label(actionFrame, text="Output Format", font=("Helvetica", 16)).grid(row=5)
         self.outputChoice = OutputChoices(master=actionFrame)
-        self.outputChoice.grid(row=5, pady=(0,25))
+        self.outputChoice.grid(row=6, pady=(0,25))
         selectionFrame = Frame(master=actionFrame)
         Button(selectionFrame, text='Encrypt', command=self.encrypt).grid(row=2, column=0, padx=5, pady=4)
         Button(selectionFrame, text='Decrypt', command=self.decrypt).grid(row=2, column=1, padx=5, pady=4)
-        selectionFrame.grid(row=6)
-        actionFrame.grid(row=7, column=0, columnspan=2, pady=(0,25))
+        selectionFrame.grid(row=7)
+        actionFrame.grid(row=8, column=0, columnspan=2, pady=(0,25))
 
 		# Output
         outputFrame = Frame()
         Label(outputFrame, text="Processed Text", font=("Helvetica", 16)).grid(column=0)
-        outputFrame.grid(row=8)
+        outputFrame.grid(row=9)
         self.eOutput = Text(master, height=4, width=90, font=("Consolas", 12))
-        self.eOutput.grid(row=9, padx=10)
+        self.eOutput.grid(row=10, padx=10)
         saveFrame = Frame()
         Button(saveFrame, text='Save File', command=self.savefile).grid(column=1)
-        saveFrame.grid(row=10)
+        saveFrame.grid(row=11)
 
     def selectall(self, event):
         event.widget.tag_add("sel", "1.0", "end-1c")
@@ -158,7 +160,7 @@ class CipherOptions(Frame):
         ("Super Enkripsi", 6),
         ("Affine Cipher", 7),
         ("Hill Cipher", 8),
-        ("Enigma Cipher", 9),
+        # ("Enigma Cipher", 9),
     ]
 
     def __init__(self, master=None):
@@ -166,7 +168,7 @@ class CipherOptions(Frame):
         self.master = master
         self.v = IntVar()
         self.v.set(1)
-        Label(self, text="Cipher Select", font=("Helvetica", 16)).grid(row=0, column=2)
+        # Label(self, text="Cipher Select", font=("Helvetica", 16)).grid(row=0, column=2)
 
         for i, v in enumerate(self.ciphers[:len(self.ciphers)//2]):
             cipher, val = v
@@ -193,14 +195,16 @@ class CipherOptions(Frame):
             return cp.Affine()
         elif (self.v.get() == 8):
             return cp.Hill()
+        '''
         elif (self.v.get() == 9):
-            return cp.VigenereStandard() #cp.Enigma()
+            return cp.Enigma()
+        '''
 
 class OutputChoices(Frame):
     formats = [
-        ("Original", 1),
-        ("Tanpa Spasi", 2),
-        ("Kelompok 5 Huruf", 3),
+        # ("Original", 0),
+        ("Tanpa Spasi", 1),
+        ("Kelompok 5 Huruf", 2),
     ]
 
     def __init__(self, master=None):
@@ -208,18 +212,20 @@ class OutputChoices(Frame):
         self.master = master
         self.v = IntVar()
         self.v.set(1)
-        Label(self, text="Output Format", font=("Helvetica", 16)).grid(row=0, column=1)
+        # Label(self, text="Output Format", font=("Helvetica", 16)).grid(row=0, column=1)
 
         for i, v in enumerate(self.formats):
             fmt, val = v
             Radiobutton(self, text=fmt, variable=self.v, value=val, width=18).grid(row=1, column=i, sticky=W)
 
     def getFormatter(self):
-        if (self.v.get() == 1):
+        '''
+        if (self.v.get() == 0):
             return fmt.Original()
-        elif (self.v.get() == 2):
+        '''
+        if (self.v.get() == 1):
             return fmt.NoSpaces()
-        elif (self.v.get() == 3):
+        elif (self.v.get() == 2):
             return fmt.GroupOfWords()
 
 def safeData(path, data):
